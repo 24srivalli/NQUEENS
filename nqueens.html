@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>N-Queens 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#0a0c10;--panel:rgba(255,255,255,.05);--bd:rgba(255,255,255,.12);--tx:#e8edf3;--mu:#8b97a6;--ac:#38bdf8;--ok:#34d399;--bad:#f87171}
+:root[data-theme=light]{--bg:#e9edf2;--panel:rgba(255,255,255,.65);--bd:rgba(0,0,0,.12);--tx:#111827;--mu:#5b6676}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#e9edf2;--panel:rgba(255,255,255,.65);--bd:rgba(0,0,0,.12);--tx:#111827;--mu:#5b6676}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:radial-gradient(1200px 600px at 30% -10%,rgba(56,189,248,.12),transparent),var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--bd)}
+h1{font-size:18px;letter-spacing:.28em;margin:0;font-weight:600}h1 b{color:var(--ac)}
+.sub{color:var(--mu);font-size:12px;margin-top:2px;letter-spacing:.02em}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;padding:14px 20px}
+@media(max-width:860px){main{grid-template-columns:1fr;padding:10px}}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:16px;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.25)}
+#stage{position:relative;height:62vh;min-height:340px;overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:100%;cursor:grab}
+#op{position:absolute;left:12px;bottom:12px;right:12px;padding:8px 12px;border-radius:10px;background:rgba(10,12,16,.7);color:#e8edf3;font-size:13px;border:1px solid var(--bd)}
+#cam{position:absolute;top:10px;right:10px;display:flex;gap:6px}
+side,.side{display:flex;flex-direction:column;gap:12px}
+.p{padding:14px}.lb{font-size:11px;letter-spacing:.14em;color:var(--mu);margin-bottom:8px}
+button{font:inherit;color:var(--tx);background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;cursor:pointer;transition:.15s}
+button:hover{border-color:var(--ac);box-shadow:0 0 12px rgba(56,189,248,.25)}
+button.pri{background:linear-gradient(135deg,#0ea5e9,#38bdf8);color:#04121c;border:0;font-weight:600}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.nin{display:flex;gap:8px;justify-content:center}.nin button{flex:0 0 44px;font-size:18px}
+#n{width:80px;flex:0 0 80px;text-align:center;font-size:26px;font-weight:600;background:transparent;color:var(--tx);border:1px solid var(--bd);border-radius:10px}
+#err{min-height:18px;color:var(--bad);font-size:12px;text-align:center;margin-top:6px}
+.hint{color:var(--mu);font-size:11px;text-align:center}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stats div{padding:8px;border:1px solid var(--bd);border-radius:10px}
+.stats b{display:block;font-size:20px}.stats span{font-size:10px;letter-spacing:.12em;color:var(--mu)}
+input[type=range]{width:100%;accent-color:var(--ac)}
+#log{margin:0 20px 18px;padding:10px 14px;max-height:170px;overflow:auto;font:12px ui-monospace,Menlo,monospace}
+#log div{padding:1px 0;border-bottom:1px solid var(--bd)}
+.TRY{color:var(--ac)}.CHECK{color:#fbbf24}.CONFLICT{color:var(--bad)}.PLACE{color:var(--ok)}.BACKTRACK{color:#c084fc}.SOLUTION{color:var(--ok);font-weight:700}
+@media(max-width:860px){#log{margin:0 10px 14px}}
+</style></head><body>
+<header><div><h1>N-QUEENS <b>3D</b></h1><div class="sub">Visualize the world's classic constraint-solving problem.</div></div><button id="theme">Theme</button></header>
+<main>
+<div class="card" id="stage"><div id="cv" style="width:100%;height:100%"></div>
+<div id="cam"><button id="vTop">Top</button><button id="vPer">Perspective</button><button id="vRes">Reset</button></div>
+<div id="op">Ready. Press “Visualize Algorithm” to watch backtracking.</div></div>
+<div class="side">
+<div class="card p"><div class="lb">BOARD SIZE</div>
+<div class="nin"><button id="dec">−</button><input id="n" value="8" inputmode="numeric" aria-label="Board size"><button id="inc">+</button></div>
+<div id="err"></div><div class="hint">Allowed: 1–12. Large N values can require substantial computation.</div></div>
+<div class="card p"><div class="lb">ALGORITHM · BACKTRACKING</div>
+<div class="row" style="margin-bottom:8px"><button id="gen">Generate Solution</button><button id="vis" class="pri">▶ Visualize Algorithm</button></div>
+<div class="row"><button id="play">Pause</button><button id="step">Step</button><button id="reset">Reset</button></div>
+<div class="lb" style="margin-top:12px">SPEED</div><input type="range" id="spd" min="1" max="10" value="5">
+<div class="row" style="margin-top:8px"><button id="cnt">Count all solutions</button></div></div>
+<div class="card p"><div class="lb">STATISTICS</div><div class="stats">
+<div><b id="sPl">0</b><span>PLACEMENTS</span></div><div><b id="sBt">0</b><span>BACKTRACKS</span></div>
+<div><b id="sCk">0</b><span>CHECKS</span></div><div><b id="sCf">0</b><span>CONFLICTS</span></div>
+<div><b id="sDp">0</b><span>DEPTH</span></div><div><b id="sSo">0</b><span>SOLUTIONS SEEN</span></div></div></div>
+</div></main>
+<div class="card" id="log"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let N=8,gen=null,playing=false,timer=null,queens=[],qm={},tiles=[],S,solved=false,doneRun=false;
+/* ---------- solver: generator emitting visualization events ---------- */
+function* solve(n){
+  const cols=new Set(),d1=new Set(),d2=new Set(),q=Array(n).fill(-1);
+  function* rec(r){
+    if(r===n){yield{t:'SOLUTION',q:[...q]};return}
+    for(let c=0;c<n;c++){
+      yield{t:'TRY',r,c};yield{t:'CHECK',r,c};
+      const why=cols.has(c)?'column':d1.has(r-c)?'diagonal ↘':d2.has(r+c)?'diagonal ↙':null;
+      if(why){yield{t:'CONFLICT',r,c,why};continue}
+      cols.add(c);d1.add(r-c);d2.add(r+c);q[r]=c;
+      yield{t:'PLACE',r,c};yield*rec(r+1);
+      cols.delete(c);d1.delete(r-c);d2.delete(r+c);q[r]=-1;
+      yield{t:'BACKTRACK',r,c};
+    }
+  }
+  yield*rec(0);yield{t:'DONE'};
+}
+function countAll(n){let k=0;const f=(r,c,a,b)=>{if(r===n){k++;return}for(let i=0;i<n;i++){if(c>>i&1||a>>(r+i)&1||b>>(r-i+n)&1)continue;f(r+1,c|1<<i,a|1<<(r+i),b|1<<(r-i+n))}};f(0,0,0,0);return k}
+/* ---------- three.js scene ---------- */
+const host=$('cv'),R=new THREE.WebGLRenderer({antialias:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(R.domElement);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.1,200);
+scene.add(new THREE.HemisphereLight(0xffffff,0x223344,.9));
+const sun=new THREE.DirectionalLight(0xffffff,.9);sun.position.set(8,14,6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-10,right:10,top:10,bottom:-10});scene.add(sun);
+const glow=new THREE.PointLight(0x38bdf8,.8,30);glow.position.set(-6,5,-6);scene.add(glow);
+const board=new THREE.Group(),qg=new THREE.Group();scene.add(board,qg);
+const hl=new THREE.Mesh(new THREE.BoxGeometry(1,.05,1),new THREE.MeshBasicMaterial({transparent:true,opacity:.55}));hl.visible=false;scene.add(hl);
+let line=null;const rings=[];
+const sqG=new THREE.BoxGeometry(1,.2,1),lt=new THREE.MeshStandardMaterial({color:0xdfe6ee,roughness:.35,metalness:.15}),dk=new THREE.MeshStandardMaterial({color:0x2a3340,roughness:.3,metalness:.3});
+const pos=(r,c)=>new THREE.Vector3(c-(N-1)/2,0,r-(N-1)/2);
+function buildBoard(){
+  board.clear();tiles=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const m=new THREE.Mesh(sqG,(r+c)%2?dk:lt);m.position.copy(pos(r,c)).setY(0);m.receiveShadow=true;board.add(m);tiles.push(m)}
+  const base=new THREE.Mesh(new THREE.BoxGeometry(N+.7,.3,N+.7),new THREE.MeshStandardMaterial({color:0x0f141b,metalness:.8,roughness:.25}));
+  base.position.y=-.22;base.receiveShadow=true;board.add(base);
+  const rim=new THREE.Mesh(new THREE.BoxGeometry(N+.75,.02,N+.75),new THREE.MeshBasicMaterial({color:0x38bdf8}));rim.position.y=-.38;board.add(rim);
+}
+const prof=[[0,0],[.36,0],[.38,.07],[.3,.14],[.2,.3],[.14,.65],[.2,.75],[.25,.9],[.2,.95],[0,.95]].map(p=>new THREE.Vector2(p[0],p[1]));
+const qGeo=new THREE.LatheGeometry(prof,28),ballG=new THREE.SphereGeometry(.1,16,12);
+function makeQueen(ok){
+  const mat=new THREE.MeshStandardMaterial({color:0xdde4ec,metalness:.75,roughness:.25,emissive:ok?0x10b981:0x38bdf8,emissiveIntensity:ok?.5:.12});
+  const g=new THREE.Group(),b=new THREE.Mesh(qGeo,mat),k=new THREE.Mesh(ballG,mat);k.position.y=1.05;
+  g.add(b,k);g.traverse(o=>{if(o.isMesh)o.castShadow=true});g.userData.mat=mat;return g;
+}
+function ring(v,col){const m=new THREE.Mesh(new THREE.RingGeometry(.3,.36,32),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.9,side:2}));
+  m.rotation.x=-Math.PI/2;m.position.copy(v).setY(.13);scene.add(m);rings.push(m)}
+/* ---------- orbit camera ---------- */
+let cam={th:.6,ph:.95,rad:13},tgt={...cam};
+const home=()=>({th:.6,ph:.95,rad:Math.max(9,N*1.5+3)});
+function setView(v){tgt={...tgt,...v}}
+function placeCam(){cam.th+=(tgt.th-cam.th)*.1;cam.ph+=(tgt.ph-cam.ph)*.1;cam.rad+=(tgt.rad-cam.rad)*.1;
+  camera.position.set(cam.rad*Math.sin(cam.ph)*Math.sin(cam.th),cam.rad*Math.cos(cam.ph),cam.rad*Math.sin(cam.ph)*Math.cos(cam.th));camera.lookAt(0,0,0)}
+const ptr=new Map();let pd=0;
+R.domElement.addEventListener('pointerdown',e=>{R.domElement.setPointerCapture(e.pointerId);ptr.set(e.pointerId,e)});
+R.domElement.addEventListener('pointerup',e=>ptr.delete(e.pointerId));
+R.domElement.addEventListener('pointermove',e=>{
+  const p=ptr.get(e.pointerId);if(!p)return;
+  if(ptr.size===1){tgt.th-=(e.clientX-p.clientX)*.008;tgt.ph=Math.min(1.5,Math.max(.02,tgt.ph-(e.clientY-p.clientY)*.008))}
+  ptr.set(e.pointerId,e);
+  if(ptr.size===2){const [a,b]=[...ptr.values()],d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(pd)tgt.rad=Math.min(40,Math.max(5,tgt.rad*pd/d));pd=d}else pd=0});
+R.domElement.addEventListener('wheel',e=>{e.preventDefault();tgt.rad=Math.min(40,Math.max(5,tgt.rad*(1+e.deltaY*.001)))},{passive:false});
+function resize(){const w=host.clientWidth,h=host.clientHeight;R.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(host);
+function frame(){
+  placeCam();
+  for(const k in qm){const m=qm[k];m.position.y+=(0-m.position.y)*.18;if(m.position.y<.005)m.position.y=0}
+  for(let i=rings.length-1;i>=0;i--){const m=rings[i];m.scale.addScalar(.05);m.material.opacity-=.03;if(m.material.opacity<=0){scene.remove(m);rings.splice(i,1)}}
+  R.render(scene,camera);requestAnimationFrame(frame)}
+/* ---------- state / events ---------- */
+S={pl:0,bt:0,ck:0,cf:0,dp:0,so:0};
+function stats(){$('sPl').textContent=S.pl;$('sBt').textContent=S.bt;$('sCk').textContent=S.ck;$('sCf').textContent=S.cf;$('sDp').textContent=S.dp;$('sSo').textContent=S.so}
+function op(t){$('op').textContent=t}
+function log(t,msg){const d=document.createElement('div');d.className=t;d.textContent=`${t.padEnd(10)} ${msg}`;const L=$('log');L.appendChild(d);if(L.children.length>300)L.firstChild.remove();L.scrollTop=L.scrollHeight}
+function clearLine(){if(line){scene.remove(line);line=null}}
+function addQueen(r,c,ok,instant){
+  const m=makeQueen(ok);m.position.copy(pos(r,c));if(!instant)m.position.y=3;qg.add(m);qm[r]=m;queens[r]=c}
+function dropQueen(r){if(qm[r]){qg.remove(qm[r]);delete qm[r]}queens[r]=-1}
+function mark(r,c,col){hl.visible=true;hl.position.copy(pos(r,c)).setY(.14);hl.material.color.set(col)}
+function apply(e){
+  clearLine();
+  const sq=`(row ${e.r}, col ${e.c})`;
+  switch(e.t){
+    case'TRY':mark(e.r,e.c,0x38bdf8);S.dp=e.r;op(`Trying ${sq}`);log('TRY',sq);break;
+    case'CHECK':mark(e.r,e.c,0xfbbf24);S.ck++;op(`Checking column & diagonals for ${sq}`);log('CHECK',sq);break;
+    case'CONFLICT':{mark(e.r,e.c,0xf87171);S.cf++;
+      for(let r=0;r<e.r;r++){const c=queens[r];if(c===e.c||Math.abs(r-e.r)===Math.abs(c-e.c)){
+        line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([pos(r,c).setY(.6),pos(e.r,e.c).setY(.3)]),new THREE.LineBasicMaterial({color:0xf87171}));scene.add(line);break}}
+      op(`Conflict on ${e.why} at ${sq}`);log('CONFLICT',`${sq} — ${e.why}`);break}
+    case'PLACE':mark(e.r,e.c,0x34d399);addQueen(e.r,e.c,false);ring(pos(e.r,e.c),0x34d399);S.pl++;S.dp=e.r+1;op(`Placed queen at ${sq}`);log('PLACE',sq);break;
+    case'BACKTRACK':dropQueen(e.r);mark(e.r,e.c,0xc084fc);S.bt++;S.dp=e.r;op(`Backtrack: removed queen from ${sq}`);log('BACKTRACK',sq);break;
+    case'SOLUTION':hl.visible=false;S.so++;S.dp=N;Object.values(qm).forEach(m=>{m.userData.mat.emissive.set(0x10b981);m.userData.mat.emissiveIntensity=.55});
+      op(`Solution #${S.so} found: [${e.q.join(', ')}] — press Play to keep searching`);log('SOLUTION',`#${S.so} [${e.q.join(', ')}]`);pause();break;
+    case'DONE':hl.visible=false;op(`Search complete. ${S.so} solution${S.so===1?'':'s'} found${N>1&&!S.so?' — none exist for this N':''}.`);log('DONE','search space exhausted');doneRun=true;pause();break;
+  }
+  stats();
+}
+function step(){if(!gen||doneRun){if(doneRun)return;gen=solve(N)}
+  const{value,done}=gen.next();if(!done)apply(value)}
+function pause(){playing=false;clearInterval(timer);$('play').textContent='Play'}
+function play(){if(doneRun)return;playing=true;$('play').textContent='Pause';clearInterval(timer);
+  const s=+$('spd').value;timer=setInterval(()=>{for(let i=0;i<(s>8?4:1);i++)step()},Math.round(900/Math.pow(s,1.45)))}
+function reset(){pause();gen=null;doneRun=false;Object.keys(qm).forEach(dropQueen);queens=Array(N).fill(-1);hl.visible=false;clearLine();
+  S={pl:0,bt:0,ck:0,cf:0,dp:0,so:0};stats();$('log').innerHTML='';op('Ready. Press “Visualize Algorithm” to watch backtracking.')}
+function setN(v,fromInput){
+  const s=String(v).trim(),x=Number(s);let m='';
+  if(s==='')m='Enter a number between 1 and 12.';else if(isNaN(x))m='Not a valid number.';else if(!Number.isInteger(x))m='Decimals are not allowed — use a whole number.';
+  else if(x<1)m='N must be at least 1.';else if(x>12)m='Maximum is 12: large N values can require substantial computation.';
+  $('err').textContent=m;if(m)return false;
+  N=x;$('n').value=x;reset();buildBoard();setView(home());return true}
+/* ---------- wiring ---------- */
+$('n').addEventListener('input',e=>setN(e.target.value));
+$('n').addEventListener('blur',()=>{$('n').value=N;$('err').textContent=''});
+$('dec').onclick=()=>setN(Math.max(1,N-1));$('inc').onclick=()=>setN(Math.min(12,N+1));
+$('vis').onclick=()=>{reset();gen=solve(N);play()};
+$('play').onclick=()=>playing?pause():(gen?play():(gen=solve(N),play()));
+$('step').onclick=()=>{pause();step()};$('reset').onclick=reset;
+$('spd').oninput=()=>{if(playing)play()};
+$('gen').onclick=()=>{reset();const g=solve(N);let e;
+  while(!(e=g.next()).done){const v=e.value;
+    if(v.t==='CHECK')S.ck++;else if(v.t==='CONFLICT')S.cf++;else if(v.t==='PLACE')S.pl++;else if(v.t==='BACKTRACK')S.bt++;
+    else if(v.t==='SOLUTION'){v.q.forEach((c,r)=>addQueen(r,c,true,false));S.so=1;S.dp=N;stats();op(`First solution: [${v.q.join(', ')}] — found after ${S.pl} placements and ${S.bt} backtracks`);log('SOLUTION',`[${v.q.join(', ')}]`);return}}
+  op(`No solution exists for N = ${N}.`);stats()};
+$('cnt').onclick=()=>{op(`Counting… `);setTimeout(()=>op(`N = ${N} has ${countAll(N).toLocaleString()} distinct solutions.`),30)};
+$('vTop').onclick=()=>setView({ph:.02});$('vPer').onclick=()=>setView({ph:.95});$('vRes').onclick=()=>setView(home());
+$('theme').onclick=()=>{const r=document.documentElement,l=r.dataset.theme!=='light';r.dataset.theme=l?'light':'dark';scene.background=new THREE.Color(l?0xdde3ea:0x0a0c10)};
+scene.background=new THREE.Color(matchMedia('(prefers-color-scheme:light)').matches?0xdde3ea:0x0a0c10);
+document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';
+$('theme').onclick=(()=>{const f=$('theme').onclick;return()=>{const l=document.documentElement.dataset.theme!=='light';document.documentElement.dataset.theme=l?'light':'dark';scene.background=new THREE.Color(l?0xdde3ea:0x0a0c10)}})();
+queens=Array(N).fill(-1);buildBoard();tgt=home();cam={...tgt};resize();stats();frame();
+setTimeout(()=>$('gen').click(),400);
+</script></body></html>
